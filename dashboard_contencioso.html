@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Contencioso — Jurídico Interno</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #f7f7f6;
+    --surface: #ffffff;
+    --border: #e4e3e0;
+    --border-light: #eeede9;
+    --text: #1a1915;
+    --text-secondary: #6b6a65;
+    --blue: #2563EB;
+    --blue-light: rgba(37,99,235,0.10);
+    --red: #C84025;
+    --red-light: rgba(200,64,37,0.10);
+    --green: #0F6E56;
+    --amber: #B45309;
+    --purple: #6D4EC2;
+    --pink: #B5335A;
+    --gray: #888780;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141412;
+      --surface: #1e1d1b;
+      --border: #2e2d2a;
+      --border-light: #252420;
+      --text: #f0efe9;
+      --text-secondary: #908e88;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 0.5px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  header span {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 0.5px solid var(--border);
+  }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin: 2rem 0 .75rem;
+  }
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: .5rem;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.1rem;
+  }
+  .kpi-lbl { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+  .kpi-val { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+  .kpi-sub { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+  .cc {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.4rem;
+    margin-bottom: 1rem;
+  }
+  .cc h3 {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 1rem;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .lgd { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+  .lgd-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+  .ldot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+  .br { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .bl { min-width: 118px; max-width: 118px; text-align: right; font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .btrack { flex: 1; background: var(--border-light); border-radius: 3px; height: 14px; overflow: hidden; }
+  .bfill { height: 100%; border-radius: 3px; }
+  .stacked { display: flex; height: 14px; border-radius: 3px; overflow: hidden; flex: 1; }
+  .bnum { min-width: 36px; font-size: 11px; color: var(--text-secondary); text-align: right; }
+  table { border-collapse: separate; border-spacing: 3px; width: 100%; font-size: 11px; }
+  th { padding: 4px 8px; text-align: center; color: var(--text-secondary); font-weight: 600; white-space: nowrap; }
+  th:first-child { text-align: left; }
+  td { padding: 4px 8px; text-align: center; border-radius: 4px; font-weight: 500; }
+  td:first-child { text-align: left; color: var(--text-secondary); font-weight: 400; white-space: nowrap; }
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 2rem;
+    border-top: 0.5px solid var(--border);
+    margin-top: 2rem;
+  }
+  @media (max-width: 620px) {
+    main { padding: 1rem 1rem 3rem; }
+    header { padding: .75rem 1rem; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Contencioso — Visão Geral</h1>
+  <span>Base: jun/2026 · Excl. Jur. Tributário</span>
+</header>
+
+<main>
+
+  <!-- KPIs -->
+  <p class="section-label">Indicadores gerais</p>
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-lbl">Total ativos</div>
+      <div class="kpi-val" style="color:var(--green)">2.092</div>
+      <div class="kpi-sub">base atual</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Encerrados</div>
+      <div class="kpi-val">3.046</div>
+      <div class="kpi-sub">histórico total</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Cadastrados 2025</div>
+      <div class="kpi-val">1.008</div>
+      <div class="kpi-sub">734 ainda ativos</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Cadastrados 2026</div>
+      <div class="kpi-val">388</div>
+      <div class="kpi-sub">369 ainda ativos</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-lbl">Duração média</div>
+      <div class="kpi-val" style="color:var(--amber)">693d</div>
+      <div class="kpi-sub">~1,9 anos · mediana 384d</div>
+    </div>
+  </div>
+
+  <!-- FLUXO MENSAL -->
+  <p class="section-label">Fluxo mensal — cadastrados × encerrados (2025–2026)</p>
+  <div class="cc">
+    <div class="lgd">
+      <div class="lgd-item"><span class="ldot" style="background:var(--blue)"></span>Cadastrados</div>
+      <div class="lgd-item"><span class="ldot" style="border:1.5px dashed var(--red);background:transparent"></span>Encerrados</div>
+    </div>
+    <div style="position:relative;width:100%;height:230px">
+      <canvas id="cFlow" role="img" aria-label="Fluxo mensal de cadastros e encerramentos 2025 a 2026"></canvas>
+    </div>
+  </div>
+
+  <!-- NATUREZA + DURAÇÃO -->
+  <div class="grid-2">
+    <div>
+      <p class="section-label">Natureza — ativos</p>
+      <div class="cc" style="height:280px">
+        <div style="position:relative;width:100%;height:230px">
+          <canvas id="cNat" role="img" aria-label="Processos ativos por natureza jurídica"></canvas>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="section-label">Duração média por natureza</p>
+      <div class="cc" style="height:280px;display:flex;flex-direction:column;justify-content:center">
+        <div id="durList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARCAS -->
+  <p class="section-label">Processos por marca — ativos (Cível × Trabalhista × Outros)</p>
+  <div class="cc">
+    <div class="lgd">
+      <div class="lgd-item"><span class="ldot" style="background:var(--blue)"></span>Cível</div>
+      <div class="lgd-item"><span class="ldot" style="background:var(--red)"></span>Trabalhista</div>
+      <div class="lgd-item"><span class="ldot" style="background:var(--gray)"></span>Outros</div>
+    </div>
+    <div id="marcaList"></div>
+  </div>
+
+  <!-- OBJETOS -->
+  <p class="section-label">Top objetos — ativos</p>
+  <div class="cc">
+    <div style="position:relative;width:100%;height:360px">
+      <canvas id="cObj" role="img" aria-label="Top 15 objetos com processos ativos"></canvas>
+    </div>
+  </div>
+
+  <!-- HEATMAP -->
+  <p class="section-label">Objetos × marca — top 10 objetos, top 6 marcas (ativos)</p>
+  <div class="cc" style="overflow-x:auto">
+    <div id="heatMap"></div>
+  </div>
+
+</main>
+
+<footer>
+  Dashboard jurídico contencioso · Base Projuris · Atualizado jun/2026
+</footer>
+
+<script>
+const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
+Chart.defaults.color = isDark ? '#908e88' : '#6b6a65';
+Chart.defaults.borderColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.size = 11;
+
+const C = {
+  blue: '#2563EB', red: '#C84025', green: '#0F6E56',
+  amber: '#B45309', purple: '#6D4EC2', pink: '#B5335A', gray: '#888780'
+};
+
+// FLUXO
+new Chart(document.getElementById('cFlow'), {
+  type: 'line',
+  data: {
+    labels: ['jan/25','fev/25','mar/25','abr/25','mai/25','jun/25','jul/25','ago/25','set/25','out/25','nov/25','dez/25','jan/26','fev/26','mar/26','abr/26','mai/26','jun/26'],
+    datasets: [
+      { label: 'Cadastrados', data: [60,79,55,75,67,64,99,188,78,96,72,75,31,86,85,70,95,21],
+        borderColor: C.blue, backgroundColor: 'rgba(37,99,235,0.07)', tension: .3, fill: true, borderWidth: 2, pointRadius: 3, pointBackgroundColor: C.blue },
+      { label: 'Encerrados', data: [31,36,44,42,34,42,42,52,49,31,42,50,31,33,27,28,26,27],
+        borderColor: C.red, borderDash: [5,3], backgroundColor: 'transparent', tension: .3, borderWidth: 2, pointRadius: 3, pointBackgroundColor: C.red }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { autoSkip: false, maxRotation: 45, font: { size: 10 } } },
+      y: { beginAtZero: true, ticks: { stepSize: 50 } }
+    }
+  }
+});
+
+// NATUREZA
+new Chart(document.getElementById('cNat'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Cível','Trabalhista','Admin/Cível','Tributário','Admin/Trab.','Penal'],
+    datasets: [{ data: [1097,678,253,45,16,3],
+      backgroundColor: [C.blue, C.red, C.green, C.purple, C.amber, C.pink], borderWidth: 0 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '54%',
+    plugins: { legend: { position: 'bottom', labels: { boxWidth: 9, boxHeight: 9, padding: 10, font: { size: 11 } } } }
+  }
+});
+
+// DURAÇÃO POR NATUREZA
+const durData = [['Cível',731],['Trabalhista',623],['Admin/Cível',689],['Tributário',412],['Admin/Trab.',544]];
+const maxDur = 731;
+document.getElementById('durList').innerHTML = durData.map(([k,v]) => `
+  <div class="br">
+    <div class="bl">${k}</div>
+    <div class="btrack"><div class="bfill" style="width:${(v/maxDur*100).toFixed(1)}%;background:${C.amber}"></div></div>
+    <div class="bnum">${v}d</div>
+  </div>`).join('');
+
+// MARCAS
+const marcas = [
+  {n:'ELITE',     civ:458, trab:142, out:3},
+  {n:'PENSI',     civ:128, trab:64,  out:15},
+  {n:'COLEGUIUM', civ:83,  trab:55,  out:1},
+  {n:'ALFA',      civ:69,  trab:50,  out:1},
+  {n:'PH',        civ:33,  trab:66,  out:1},
+  {n:'NOTA 10',   civ:91,  trab:7,   out:0},
+  {n:'ANGLO',     civ:37,  trab:26,  out:0},
+  {n:'SIGMA',     civ:20,  trab:41,  out:0},
+  {n:'MASTER',    civ:51,  trab:7,   out:0},
+  {n:'IDEAL',     civ:31,  trab:24,  out:0},
+  {n:'LATO SENSU',civ:25,  trab:20,  out:1},
+  {n:'EDITORA',   civ:45,  trab:0,   out:0},
+  {n:'ISO',       civ:31,  trab:14,  out:0},
+  {n:'CEI',       civ:23,  trab:18,  out:0},
+  {n:'INTEGRADO', civ:30,  trab:9,   out:0},
+];
+const maxM = 603;
+document.getElementById('marcaList').innerHTML = marcas.map(m => {
+  const tot = m.civ + m.trab + m.out;
+  return `<div class="br">
+    <div class="bl">${m.n}</div>
+    <div class="stacked">
+      <div style="width:${(m.civ/maxM*100).toFixed(1)}%;background:${C.blue}"></div>
+      <div style="width:${(m.trab/maxM*100).toFixed(1)}%;background:${C.red}"></div>
+      <div style="width:${(m.out/maxM*100).toFixed(1)}%;background:${C.gray}"></div>
+    </div>
+    <div class="bnum" style="min-width:40px">${tot}</div>
+  </div>`;
+}).join('');
+
+// OBJETOS
+new Chart(document.getElementById('cObj'), {
+  type: 'bar',
+  data: {
+    labels: ['Cobrança','Verbas Rescisórias','Horas extras','Insalubridade','Alunado','Distrato','Assédio Moral','Documentos','Salário','Rescisão indireta','Hon. Sucumbência','FGTS','Terceirizada','Intervalo Intrajornada','Aluguel'],
+    datasets: [{ label: 'Ativos', data: [419,221,203,188,159,124,122,84,83,79,78,73,67,65,62],
+      backgroundColor: C.blue, borderRadius: 4, borderWidth: 0 }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { beginAtZero: true }, y: { ticks: { font: { size: 11 } } } }
+  }
+});
+
+// HEATMAP
+const objRows = [
+  ['Cobrança',       206,47,16,17,14,10],
+  ['Verbas Rescis.', 60, 19,14,29,11,7 ],
+  ['Horas extras',   43, 14,12,18,12,35],
+  ['Insalubridade',  37, 5, 25,19,10,13],
+  ['Alunado',        56, 18,23,6, 3, 4 ],
+  ['Distrato',       24, 3, 8, 9, 0, 0 ],
+  ['Assédio Moral',  25, 8, 12,8, 7, 7 ],
+  ['Documentos',     9,  0, 0, 0, 18,0 ],
+  ['Salário',        12, 10,7, 7, 0, 10],
+  ['Rescisão ind.',  20, 0, 15,0, 0, 0 ],
+];
+const hdrs = ['', 'Elite', 'Pensi', 'Coleq.', 'Alfa', 'Integrado', 'PH'];
+const maxH = 206;
+let html = '<table>';
+html += `<tr>${hdrs.map(h => `<th>${h}</th>`).join('')}</tr>`;
+objRows.forEach(([lbl,...vals]) => {
+  html += `<tr><td>${lbl}</td>`;
+  vals.forEach(v => {
+    const intensity = Math.max(0.05, v / maxH * 0.88);
+    const bg = `rgba(37,99,235,${intensity.toFixed(2)})`;
+    const tc = intensity > 0.45 ? '#fff' : (isDark ? '#f0efe9' : '#1a1915');
+    html += `<td style="background:${bg};color:${tc}">${v || '–'}</td>`;
+  });
+  html += '</tr>';
+});
+html += '</table>';
+document.getElementById('heatMap').innerHTML = html;
+</script>
+</body>
+</html>
